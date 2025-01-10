@@ -24,16 +24,22 @@ def search_and_store_indices(query, fasta_file_path):
 
         # find location of query in antibody
         subsections_matches = {}
-        description_parts = record.description.split(" |")  # split description by " |"
+        description_parts = record.description.split("|")  # split description by " |"
         for part in description_parts:
             for subsection in subsections:
-                if part.startswith(subsection):  # check if the part is the expected subsection
-                    subseq = part.split('=')[1] if '=' in part else ""
+                if part.startswith(
+                    subsection
+                ):  # check if the part is the expected subsection
+                    subseq = part.split("=")[1] if "=" in part else ""
                     if query in subseq:
-                        subsections_matches[subsection] = subseq
+                            subsections_matches[subsection] = subseq
         # Add matches to results if any were found
         if matches:
-            results[record.id] = {"description": record.description, "matches": matches, "subsections_matches": subsections_matches }
+            results[record.id] = {
+                "description": record.description,
+                "matches": matches,
+                "subsections_matches": subsections_matches,
+            }
 
     return results
 
@@ -51,6 +57,11 @@ for seq_id, data in results.items():
     for index, char in data["matches"].items():
         print(f"  Index: {index}, Character: {char}")
     print()
+    print("Subsection Matches:")
+    for subsection, subseq in data["subsections_matches"].items():
+        print(f"  {subsection}: {subseq}")
+    print()
+
 
 ''' reference code from the demo
 
