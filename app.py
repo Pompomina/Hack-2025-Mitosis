@@ -1,5 +1,6 @@
 from flask import Flask, json, render_template, request, send_from_directory, jsonify
 import os
+from antibodies import search_and_store_indices
 
 app = Flask(__name__)
 
@@ -19,13 +20,27 @@ def get_antibodies():
 
     app.logger.info(f"Loaded {len(all_antibodies)} antibodies.")
 
-    if antibodies_query:
-        antibodies_matching_query = [
-            antibody
-            for antibody in all_antibodies
-            if antibodies_query in antibody["type"].lower()
-            or antibodies_query in antibody["id"].lower()
-        ]
+    highlights = []
+    if len(antibodies_query) > 0:
+        matches = search_and_store_indices(
+            antibodies_query, "sequences.fasta"
+        )  # fasta file path hardcoded for demo
+        matches_list = []
+        for match in matches:
+            id, chain, type, genus, _ = match["description"].split("|")
+            sequence = match["sequence"]
+            matches_list.append(
+                {
+                    "id": id,
+                    "chain": chain,
+                    "type": type,
+                    "genus": genus,
+                    "sequence": sequence,
+                }
+            )
+        for match in matches:
+            highlights.append(match["matches"])
+        antibodies_matching_query = matches_list
     else:
         antibodies_matching_query = all_antibodies
 
@@ -33,6 +48,7 @@ def get_antibodies():
         "antibodies.html",
         antibodies_list=antibodies_matching_query,
         antibodies_query=antibodies_query,
+        highlights=highlights,
     )
 
 

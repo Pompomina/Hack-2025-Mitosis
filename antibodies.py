@@ -4,10 +4,8 @@ from rich.text import Text
 
 
 def search_and_store_indices(query, fasta_file_path):
-    results = {}
-    subsections = ["CDR1", "FR2", "CDR2", "FR3", "CDR3", "FR4"]
-
-    # parse the FASTA file and look for the query
+    results = []
+    # Parse the FASTA file and look for the query
     for record in SeqIO.parse(fasta_file_path, "fasta"):
         sequence_str = str(record.seq)
         matches = {}
@@ -15,7 +13,7 @@ def search_and_store_indices(query, fasta_file_path):
         # find all occurrences of the query and store indices and characters
         start = 0
         while True:
-            start = sequence_str.find(query, start)
+            start = sequence_str.find(query.upper(), start)
             if start == -1:
                 break
             for i in range(start, start + len(query)):
@@ -37,19 +35,20 @@ def search_and_store_indices(query, fasta_file_path):
 
         # Add matches to results if any were found
         if matches:
-            results[record.id] = {
-                "description": record.description,
-                "matches": matches,
-                "subsections_matches": subsections_matches,
-            }
-
+            results.append(
+                {
+                    "description": record.description,
+                    "matches": matches,
+                    "sequence": sequence_str,
+                }
+            )
     return results
 
 
 # Example usage
-search_query = input("Enter the sequence query: ").upper()
-fasta_file_path = "sequences.fasta"
-results = search_and_store_indices(search_query, fasta_file_path)
+# search_query = input("Enter the sequence query: ").upper()
+# fasta_file_path = "sequences.fasta"
+# results = search_and_store_indices(search_query, fasta_file_path)
 
 # Print the results
 for seq_id, data in results.items():

@@ -3,3 +3,5 @@ djlint==1.36.3
 Flask==3.1.0
 python-dotenv==1.0.1
 rdkit==2024.3.6
+biopython==1.81
+rich==13.4.2
