@@ -5,13 +5,14 @@ from rich.text import Text
 
 def search_and_store_indices(query, fasta_file_path):
     results = {}
+    subsections = ["CDR1", "FR2", "CDR2", "FR3", "CDR3", "FR4"]
 
-    # Parse the FASTA file and look for the query
+    # parse the FASTA file and look for the query
     for record in SeqIO.parse(fasta_file_path, "fasta"):
         sequence_str = str(record.seq)
         matches = {}
 
-        # Find all occurrences of the query and store indices and characters
+        # find all occurrences of the query and store indices and characters
         start = 0
         while True:
             start = sequence_str.find(query, start)
@@ -21,9 +22,18 @@ def search_and_store_indices(query, fasta_file_path):
                 matches[i] = sequence_str[i]  # Map index to character
             start += len(query)  # Move past this match
 
+        # find location of query in antibody
+        subsections_matches = {}
+        description_parts = record.description.split(" |")  # split description by " |"
+        for part in description_parts:
+            for subsection in subsections:
+                if part.startswith(subsection):  # check if the part is the expected subsection
+                    subseq = part.split('=')[1] if '=' in part else ""
+                    if query in subseq:
+                        subsections_matches[subsection] = subseq
         # Add matches to results if any were found
         if matches:
-            results[record.id] = {"description": record.description, "matches": matches}
+            results[record.id] = {"description": record.description, "matches": matches, "subsections_matches": subsections_matches }
 
     return results
 
