@@ -1,6 +1,7 @@
 from Bio import SeqIO
 from rich.console import Console
 from rich.text import Text
+from Bio.Align import PairwiseAligner
 
 
 def search_and_store_indices(query, fasta_file_path):
@@ -34,6 +35,7 @@ fasta_file_path = "sequences.fasta"
 results = search_and_store_indices(search_query, fasta_file_path)
 
 # Print the results
+"""
 for seq_id, data in results.items():
     print(f"Sequence ID: {seq_id}")
     print(f"Description: {data['description']}")
@@ -41,6 +43,105 @@ for seq_id, data in results.items():
     for index, char in data["matches"].items():
         print(f"  Index: {index}, Character: {char}")
     print()
+"""
+
+
+# (Naive) function for sequence comparison
+from Bio.Align import PairwiseAligner
+
+
+def compare_regions(region1, region2, name):
+    aligner = PairwiseAligner()
+    aligner.mode = "global"
+    alignments = aligner.align(region1, region2)
+
+    print(f"\n{name} Comparison:")
+    for alignment in alignments:
+        print(alignment)
+        print(f"Score: {alignment.score}")
+        break  # Show only the best alignment
+
+
+# Define regions
+antibody1 = {
+    "CDR1": "DYY",
+    "FR2": "IHWVRQRPEQGLEWIGW",
+    "CDR2": "LDPENGDTESAP",
+    "FR3": "KFQGKATMTADTSSNTAYLQLSSLTSEASAVYYC",
+    "CDR3": "NAISTTRDYYALDY",
+    "FR4": "WGQGTSVTVSS",
+}
+
+antibody2 = {
+    "CDR1": "NYW",
+    "FR2": "IDWIKQRPGHGLEWIGE",
+    "CDR2": "ILPGSGSTNYNEKF",
+    "FR3": "RGKATFTADTSSNTAYMQLSSLTSEDSAVYY",
+    "CDR3": "TRRGYWAYDFDY",
+    "FR4": "WGQGTTLTVSS",
+}
+
+# Compare regions
+for region in antibody1.keys():
+    compare_regions(antibody1[region], antibody2[region], region)
+
+# (BLAST) function for sequence comparison
+from Bio.Blast.Applications import NcbiblastnCommandline
+
+import subprocess
+
+
+def create_blast_database(input_fasta, db_name, db_type="nucl"):
+    """
+    Creates a BLAST database from the input FASTA file.
+    """
+    command = [
+        "makeblastdb",  # BLAST+ command
+        "-in",
+        input_fasta,  # Input FASTA file
+        "-dbtype",
+        db_type,  # Database type: 'nucl' for nucleotide, 'prot' for protein
+        "-out",
+        db_name,  # Name of the output database
+    ]
+
+    try:
+        subprocess.run(command, check=True)
+        print(f"BLAST database '{db_name}' created successfully!")
+    except subprocess.CalledProcessError as e:
+        print(f"Error while creating BLAST database: {e}")
+
+
+# Define the BLAST command
+blastn_cline = NcbiblastnCommandline(
+    query="query.fasta",  # Input query file
+    db="local_db",  # Local BLAST database
+    evalue=0.001,  # E-value threshold
+    outfmt=5,  # Output format (XML)
+    out="local_blast_results.xml",  # Output file
+)
+
+# Run BLAST
+stdout, stderr = blastn_cline()
+print(stdout)
+print(stderr)
+
+# Parse the results
+from Bio.Blast import NCBIXML
+
+with open("local_blast_results.xml") as result_file:
+    blast_records = NCBIXML.parse(result_file)
+    for record in blast_records:
+        for alignment in record.alignments:
+            for hsp in alignment.hsps:
+                print(f"****Alignment****")
+                print(f"Sequence: {alignment.title}")
+                print(f"Length: {alignment.length}")
+                print(f"E-value: {hsp.expect}")
+                print(hsp.query)
+                print(hsp.match)
+                print(hsp.sbjct)
+
 
 ''' reference code from the demo
 
